@@ -1,0 +1,42 @@
+// firestore.rules
+// ─────────────────────────────────────────────────────────────
+// Paste this into:
+//   Firebase Console → Firestore Database → Rules → Edit rules
+// Then click "Publish".
+// ─────────────────────────────────────────────────────────────
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: is the request coming from a signed-in user?
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // incidents — any signed-in user can read, create, or update.
+    // Delete is blocked for everyone (semester project safety net).
+    match /incidents/{incidentId} {
+      allow read, create, update: if isSignedIn();
+      allow delete: if false;
+    }
+
+    // resources — read/write for signed-in users only.
+    match /resources/{resourceId} {
+      allow read, update: if isSignedIn();
+      allow create, delete: if false; // resources are pre-seeded, not created from the app
+    }
+
+    // activityLogs — signed-in users can read and create.
+    // No updates or deletes — logs are append-only.
+    match /activityLogs/{logId} {
+      allow read, create: if isSignedIn();
+      allow update, delete: if false;
+    }
+
+    // Block everything else by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
